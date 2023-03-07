@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="En">
+<head>
+    <title>Battleship</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: rgb(18,20,29);
+            font-family: Helvetica, Arial, sans-serif;
+        }
+
+        h1 {
+            padding-top: 20px;
+            font-family: "Helvetica Neue",sans-serif;
+            font-weight: bold;
+            font-size: 36px;
+            margin-bottom: 20px;
+            text-align: center;
+            color: white;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(6, 50px);
+            grid-template-rows: repeat(6, 50px);
+            grid-gap: 5px;
+            margin: 0 auto 20px;
+            width: 310px;
+        }
+
+        .square {
+            background-color: rgb(104,215,255);
+            border: 1px solid darkblue;
+            text-align: center;
+            font-size: 30px;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .square:hover {
+            background-color: #5e5e5e;
+        }
+
+        .square.hit {
+            background-color: red;
+        }
+
+        .square.miss {
+            background-color: gray;
+        }
+
+        button {
+            background-color: rgb(255,110,110);
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-size: 16px;
+            padding: 10px;
+            margin-right: 10px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        .button-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        button:hover {
+            background-color: #4a4a4a;
+        }
+    </style>
+</head>
+<body>
+<h1>BATTLESHIP</h1>
+<div class="board"></div>
+<div class="button-container">
+    <button id="new-game">New Game</button>
+    <!-- Possible addition would be to make show ships display ships on board rather than just in console -->
+    <button id="show-ships">Show Ships</button>
+</div>
+<script>
+    // Define the ships JSON object
+    let shipsJSON = {
+        "ships": [
+            {
+                "name": "ship1",
+                "orientation": "vertical",
+                "size": 4,
+                "coords": [2, 1]
+            },
+            {
+                "name": "ship2",
+                "orientation": "horizontal",
+                "size": 3,
+                "coords": [3, 3]
+            },
+            {
+                "name": "ship3",
+                "orientation": "vertical",
+                "size": 3,
+                "coords": [0, 0]
+            },
+            {
+                "name": "ship4",
+                "orientation": "horizontal",
+                "size": 2,
+                "coords": [1, 4]
+            }
+        ]
+    };
+
+    // Define the square object
+    function Square(row, col) {
+        this.row = row;
+        this.col = col;
+        this.ship = null;
+        this.selected = false;
+        this.element = document.createElement('div');
+        this.element.className = 'square';
+        this.element.setAttribute('data-row', row);
+        this.element.setAttribute('data-col', col);
+        this.element.innerHTML = '&nbsp;';
+        this.element.addEventListener('click', this.onClick.bind(this));
+    }
+
+
+    // Define the game object
+    let Game = {
+        board: [],
+        ships: [],
+        guesses: 0,
+        maxGuesses: 20,
+        buildBoard: function() {
+            let boardElement = document.querySelector('.board');
+            for (let row = 0; row < 6; row++) {
+                let rowArray = [];
+                for (let col = 0; col < 6; col++) {
+                    let square = new Square(row, col);
+                    rowArray.push(square);
+                    boardElement.appendChild(square.element);
+                }
+                this.board.push(rowArray);
+            }
+        },
+        // loop through array of ship objects
+        placeShips: function() {
+            for (let i = 0; i < shipsJSON.ships.length; i++) {
+                let ship = new Ship(
+                    shipsJSON.ships[i].name,
+                    shipsJSON.ships[i].orientation,
+                    shipsJSON.ships[i].size,
+                    shipsJSON.ships[i].coords[0],
+                    shipsJSON.ships[i].coords[1]
+                );
+                this.ships.push(ship);
+                for (let j = 0; j < ship.coords.length; j++) {
+                    let row = ship.coords[j][0];
+                    let col = ship.coords[j][1];
+                    this.board[row][col].ship = ship;
+                }
+            }
+        },
+        showShips: function() {
+            for (let i = 0; i < this.ships.length; i++) {
+                console.log(this.ships[i].coords);
+            }
+        },
+        checkWin: function() {
+            for (let i = 0; i < this.ships.length; i++) {
+                if (!this.ships[i].isSunk()) {
+                    return false;
+                }
+            }
+            return true;
+        },
+        play: function() {
+            let newGameButton = document.getElementById('new-game');
+            newGameButton.addEventListener('click', this.reset.bind(this));
+            let showShipsButton = document.getElementById('show-ships');
+            showShipsButton.addEventListener('click', this.showShips.bind(this));
+            this.buildBoard();
+            this.placeShips();
+        },
+        reset: function() {
+            // Clear the board
+            let boardElement = document.querySelector('.board');
+            boardElement.innerHTML = '';
+
+            // Reset the game state
+            this.board = [];
+            this.ships = [];
+            this.guesses = 0;
+            this.maxGuesses = 20;
+
+            // Build and place new ships
+            this.buildBoard();
+            this.placeShips();
+
+            alert('New board created!');
+
+            // Reset the UI
+            let messageElement = document.querySelector('.message');
+            messageElement.innerHTML = '';
+        },
+
+    };
+
+    document.getElementById('show-ships').addEventListener('click', function() {
+        // loop through each ship in the shipsJSON object and display on board
+        for (let i = 0; i < shipsJSON.ships.length; i++) {
+            let ship = shipsJSON.ships[i];
+            for (let j = 0; j < ship.size; j++) {
+                let row = ship.coords[0] + (ship.orientation === 'vertical' ? j : 0);
+                let col = ship.coords[1] + (ship.orientation === 'horizontal' ? j : 0);
+                let square = Game.board[row][col];
+                square.element.style.backgroundColor = SHIP_COLOR; // Use SHIP_COLOR to display ships
+            }
+        }
+    });
+
+    // create function to handle game over event
+    function gameOver() {
+        // check if all ships have been sunk
+        if (Game.ships.every(function(ship) { return ship.isSunk(); })) {
+            alert('You have sunk all the ships!');
+        } else {
+            alert('Game over. You have not sunk all the ships.');
+        }
+        // reveal all ships
+        for (let i = 0; i < Game.ships.length; i++) {
+            let ship = Game.ships[i];
+            for (let j = 0; j < ship.coords.length; j++) {
+                let coord = ship.coords[j];
+                let row = coord[0];
+                let col = coord[1];
+                let square = Game.board[row][col];
+                if (square.ship === ship) {
+                    square.element.style.backgroundColor = "lightblue";
+                }
+            }
+        }
+    }
+
+    Square.prototype.onClick = function() {
+        if (!this.selected) {
+            this.selected = true;
+            if (this.ship) {
+                this.element.classList.add('hit');
+                this.ship.hits[this.ship.coords.indexOf([this.row, this.col])] = true;
+                if (this.ship.isSunk()) {
+                    alert('You sunk a ship!');
+                    if (Game.ships.every(function(ship) { return ship.isSunk(); })) {
+                        gameOver();
+                    }
+                } else {
+                    alert('You hit a ship!');
+                }
+            } else {
+                this.element.classList.add('miss');
+                alert('You missed!');
+            }
+            Game.guesses++;
+            if (Game.guesses === Game.maxGuesses) {
+                gameOver();
+            }
+        }
+    };
+
+    // Define the ship object
+    function Ship(name, orientation, size, row, col) {
+        this.name = name;
+        this.orientation = orientation;
+        this.size = size;
+        this.coords = [];
+        for (let i = 0; i < size; i++) {
+            if (orientation === 'vertical') {
+                this.coords.push([row + i, col]);
+            } else {
+                this.coords.push([row, col + i]);
+            }
+        }
+        this.hits = Array(size).fill(false);
+    }
+
+    // Check if ship sunk
+    Ship.prototype.isSunk = function() {
+        for (let i = 0; i < this.coords.length; i++) {
+            let coord = this.coords[i];
+            let row = coord[0];
+            let col = coord[1];
+            let square = Game.board[row][col];
+            if (!square.selected) {
+                return false;
+            }
+        }
+        return true;
+    };
+
+    function resetSquares() {
+        for (let i = 0; i < Game.board.length; i++) {
+            for (let j = 0; j < Game.board[i].length; j++) {
+                let square = Game.board[i][j];
+                square.selected = false;
+                square.ship = null;
+                square.element.classList.remove('hit', 'miss');
+                square.element.style.backgroundColor = SHIP_COLOR;
+            }
+        }
+    }
+
+    function resetBoard() {
+        for (let row = 0; row < Game.board.length; row++) {
+            for (let col = 0; col < Game.board[row].length; col++) {
+                let square = Game.board[row][col];
+                square.selected = false;
+                square.ship = null;
+                square.element.classList.remove('hit', 'miss');
+                square.element.style.backgroundColor = '';
+            }
+        }
+    }
+
+
+    Game.play();
+</script>
+</body>
+</html>
