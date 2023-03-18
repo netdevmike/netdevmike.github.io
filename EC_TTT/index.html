@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <style>
+    body {
+      background-color: rgb(18,20,30);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .grid-container {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      grid-gap: 5px;
+      margin: 5px;
+      border: 10px solid rgb(61,207,145);
+      width: 500px;
+      height: 500px;
+    }
+
+    .grid-cell {
+      background-color: #000000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 72px;
+      color: #FFFFFF;
+    }
+
+    .grid-cell.X {
+      color: #00FF00;
+    }
+
+    .grid-cell.O {
+      color: #FFFF00;
+    }
+
+    h1 {
+      color: #FFFFFF;
+      text-align: center;
+      font-size: 72px;
+    }
+  </style>
+  <title>Tic-Tac-Toe</title>
+</head>
+<body>
+<h1>Tic Tac Toe</h1>
+<div class="grid-container"></div>
+<div class="grid-cell"></div>
+<p class="turn" style="color: white;"></p>
+<p class="message" style="color: white;"></p>
+
+<script>
+  class TicTacToe {
+    constructor() {
+      this.turn = 'X';
+      this.gameOver = false;
+      this.cells = [];
+      this.generateGrid();
+      document.querySelector('.grid-container').addEventListener('click', this.handleClick.bind(this));
+      document.querySelector('.turn').textContent = `${this.turn}'s turn`;
+    }
+
+    generateGrid() {
+      for (let i = 0; i < 9; i++) {
+        let cell = document.createElement('div');
+        cell.classList.add('grid-cell');
+        this.cells.push(cell);
+        document.querySelector('.grid-container').appendChild(cell);
+      }
+    }
+
+    handleClick(event) {
+      let cell = event.target;
+
+      if (!cell.classList.contains('grid-cell') || this.gameOver) {
+        return;
+      }
+
+      cell.textContent = this.turn;
+
+      if (this.checkForWin(this.turn)) {
+        document.querySelector('.message').textContent = `${this.turn} wins!`;
+        this.gameOver = true;
+      } else if (this.checkForDraw()) {
+        document.querySelector('.message').textContent = ` Draw!`;
+        this.gameOver = true;
+      } else {
+        this.turn = (this.turn === 'X') ? 'O' : 'X';
+        document.querySelector('.turn').textContent = `${this.turn}'s turn`;
+      }
+    }
+
+    checkForWin(symbol) {
+      for (let i = 0; i < 9; i += 3) {
+        if (this.cells[i].textContent === symbol &&
+                this.cells[i + 1].textContent === symbol &&
+                this.cells[i + 2].textContent === symbol) {
+          return true;
+        }
+      }
+
+      for (let i = 0; i < 3; i++) {
+        if (this.cells[i].textContent === symbol &&
+                this.cells[i + 3].textContent === symbol &&
+                this.cells[i + 6].textContent === symbol) {
+          return true;
+        }
+      }
+
+      if (this.cells[0].textContent === symbol &&
+              this.cells[4].textContent === symbol &&
+              this.cells[8].textContent === symbol) {
+        return true;
+      }
+      return this.cells[2].textContent === symbol &&
+              this.cells[4].textContent === symbol &&
+              this.cells[6].textContent === symbol;
+    }
+    checkForDraw() {
+      for (let i = 0; i < 9; i++) {
+        if (this.cells[i].textContent === '') {
+          return false;
+        }
+      }
+      return true;
+    }
+  }
+
+  // Initialize the game
+  const game = new TicTacToe();
+</script>
+
+</body>
+</html>
+
