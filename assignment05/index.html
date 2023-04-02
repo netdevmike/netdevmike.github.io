@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wordle Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: rgb(18,20,29);
+            color: white;
+        }
+
+        h1 {
+            color: rgb(255,110,110);
+            text-align: center;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 600px;
+        }
+
+        button {
+            cursor: pointer;
+            background-color: rgb(59,207,145);
+            border-radius: 12px;
+            border: none;
+            margin: 10px 10px 10px 0;
+            color: white;
+            font-size: 16px;
+        }
+
+        #input {
+            width: 100%;
+            border: none;
+            margin: 10px 10px 10px 0;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        #game-board {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 5px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Wordle Game</h1>
+    <button id="debug">Debug Mode</button>
+    <div id="not-in-word-letters">Letters not in word: </div>
+    <div id="in-word-letters">Letters in word: </div>
+    <div id="game-board"></div>
+    <label for="input"></label><input type="text" id="input" placeholder="Enter your 5-letter guess" maxlength="5">
+    <button id="submit">Submit</button>
+    <div id="message"></div>
+    <button id="reset">Restart Game</button>
+    <div id="stats"></div>
+</div>
+<script>
+    const apiUrl = "https://random-word-api.herokuapp.com/word?length=5";
+
+    const debugBtn = document.getElementById("debug");
+    const notInWordLettersEl = document.getElementById("not-in-word-letters");
+    const inWordLettersEl = document.getElementById("in-word-letters");
+    const gameBoard = document.getElementById("game-board");
+    const input = document.getElementById("input");
+    const submitBtn = document.getElementById("submit");
+    const messageEl = document.getElementById("message");
+    const resetBtn = document.getElementById("reset");
+    const statsEl = document.getElementById("stats");
+
+    let answer = "";
+    let notInWordLetters = [];
+    let inWordLetters = [];
+    let guesses = 0;
+    let debug = false;
+    let wins = 0;
+    let losses = 0;
+
+    debugBtn.addEventListener("click", () => {
+        debug = !debug;
+        debugBtn.innerText = debug ? "Disable Debug" : "Debug Mode";
+        displayAnswer();
+    });
+
+    submitBtn.addEventListener("click", () => {
+        if (input.value.length === 5) {
+            submitGuess(input.value.toUpperCase());
+        } else {
+            messageEl.innerText = "Please enter a 5-letter word.";
+        }
+    });
+
+    resetBtn.addEventListener("click", () => {
+        startGame();
+    });
+
+    function startGame() {
+        getWord();
+        notInWordLetters = [];
+        inWordLetters = [];
+        notInWordLettersEl.innerText = "Letters not in word: ";
+        inWordLettersEl.innerText = "Letters in word: ";
+        guesses = 0;
+        messageEl.innerText = "";
+        input.value = "";
+    }
+
+    function getWord() {
+        fetch(apiUrl)
+            .then((response) => response.json())
+            .then((data) => {
+                answer = data[0].toUpperCase();
+                displayAnswer();
+            });
+    }
+
+    function displayAnswer() {
+        gameBoard.innerHTML = "";
+        for (let letter of answer) {
+            const letterEl = document.createElement("div");
+            letterEl.classList.add("letter-cell");
+            letterEl.innerText = debug ? letter : "";
+            gameBoard.appendChild(letterEl);
+        }
+    }
+
+    function updateUsedLetters(letter, isInWord) {
+        if (isInWord) {
+            if (!inWordLetters.includes(letter)) {
+                inWordLetters.push(letter);
+                inWordLetters.sort();
+                inWordLettersEl.innerText = "Letters in word: " + inWordLetters.join(', ');
+            }
+        } else {
+            if (!notInWordLetters.includes(letter)) {
+                notInWordLetters.push(letter);
+                notInWordLetters.sort();
+                notInWordLettersEl.innerText = "Letters not in word: " + notInWordLetters.join(', ');
+            }
+        }
+    }
+
+    function isValidWord(word) {
+        return fetch(`https://api.datamuse.com/words?sp=${word}&md=f&max=1`)
+            .then((response) => response.json())
+            .then((data) => {
+                return data.length > 0;
+            })
+            .catch((error) => {
+                console.error("Error fetching word validation:", error);
+                return false;
+            });
+    }
+
+    async function submitGuess(guess) {
+        const isValid = await isValidWord(guess);
+        if (!isValid) {
+            messageEl.innerText = "Please enter a valid 5-letter word.";
+            return;
+        }
+
+        let correct = 0;
+        let message = "";
+
+        for (let i = 0; i < 5; i++) {
+            if (answer[i] === guess[i]) {
+                correct++;
+                updateUsedLetters(guess[i], true);
+            } else if (answer.includes(guess[i])) {
+                message += `${guess[i]} is in the wrong place.\n`;
+                updateUsedLetters(guess[i], true);
+            } else {
+                message += `${guess[i]} is not in the word.\n`;
+                updateUsedLetters(guess[i], false);
+            }
+        }
+
+        if (correct === 5) {
+            message = "Congratulations! You guessed the word!";
+            wins++;
+        } else {
+            guesses++;
+            if (guesses === 6) {
+                message += `You have used all your guesses. The correct word was ${answer}. Better luck next time!`;
+                losses++;
+            }
+        }
+
+        messageEl.innerText = message;
+        updateStats();
+    }
+
+    function updateStats() {
+        statsEl.innerHTML = `Wins: ${wins} <br> Losses: ${losses}`;
+    }
+
+    startGame();
+</script>
+</body>
+</html>
