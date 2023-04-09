@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Wordle Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: rgb(18, 20, 29);
+            color: white;
+        }
+
+        h1 {
+            color: rgb(255, 110, 110);
+            text-align: center;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 600px;
+        }
+
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 5px;
+        }
+
+        .letter-cell {
+            border: 1px solid white;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .keyboard {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .key {
+            cursor: pointer;
+            background-color: rgb(59, 207, 145);
+            border-radius: 12px;
+            border: none;
+            margin: 10px 10px 10px 0;
+            color: white;
+            font-size: 16px;
+            width: 40px;
+            height: 40px;
+            text-align: center;
+            line-height: 40px;
+        }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/babel-standalone@6.26.0/babel.min.js"></script>
+<script type="text/babel">
+    function Wordle() {
+        const answer = 'MOODY';
+        const [notInWordLetters, setNotInWordLetters] = React.useState([]);
+        const [inWordLetters, setInWordLetters] = React.useState([]);
+        const [guesses, setGuesses] = React.useState(['MIGHT', 'FLOOD', 'STRAY']);
+        const [debug, setDebug] = React.useState(false);
+        const [wins, setWins] = React.useState(0);
+        const [losses, setLosses] = React.useState(0);
+        const [message, setMessage] = React.useState('');
+
+        function toggleDebug() {
+            setDebug(!debug);
+        }
+
+        function processGuesses() {
+            let newNotInWordLetters = [];
+            let newInWordLetters = [];
+
+            guesses.forEach((guess) => {
+                for (let i = 0; i < 5; i++) {
+                    if (answer[i] === guess[i]) {
+                        if (!newInWordLetters.includes(guess[i])) {
+                            newInWordLetters.push(guess[i]);
+                        }
+                    } else if (answer.includes(guess[i])) {
+                        if (!newInWordLetters.includes(guess[i])) {
+                            newInWordLetters.push(guess[i]);
+                        }
+                    } else {
+                        if (!newNotInWordLetters.includes(guess[i])) {
+                            newNotInWordLetters.push(guess[i]);
+                        }
+                    }
+                }
+            });
+
+            setInWordLetters(newInWordLetters);
+        }
+
+        // Process hardcoded guesses
+        React.useEffect(() => {
+            processGuesses();
+        }, []);
+
+        function renderBoard() {
+            return answer.split('').map((letter, index) => (
+                <div key={index} className="letter-cell">
+                    {debug ? letter : ''}
+                </div>
+            ));
+        }
+
+        function renderKeyboard() {
+            const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+
+            return (
+                <div className="keyboard">
+                    {alphabet.map((letter) => (
+                        <div key={letter} className="key">
+                            {letter}
+                        </div>
+                    ))}
+                </div>
+            );
+        }
+
+        return (
+            <div className="container">
+                <h1>Wordle Game</h1>
+                <button onClick={toggleDebug}>{debug ? 'Disable Debug' : 'Debug Mode'}</button>
+                <div id="not-in-word-letters">Letters not in word: {notInWordLetters.join(', ')}</div>
+                <div id="in-word-letters">Letters in word: {inWordLetters.join(', ')}</div>
+                <div className="game-board">{renderBoard()}</div>
+                {renderKeyboard()}
+                <div id="message">{message}</div>
+                <div id="stats">Wins: {wins} Losses: {losses}</div>
+            </div>
+        );
+    }
+
+    ReactDOM.render(<Wordle />, document.getElementById('root'));
+</script>
+</body>
+</html>
+
+
